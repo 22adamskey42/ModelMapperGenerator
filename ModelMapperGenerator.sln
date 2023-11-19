@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34309.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelMapperGenerator", "ModelMapperGenerator\ModelMapperGenerator.csproj", "{14BF3B35-5A01-4E23-A328-7084A06FF9FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelMapperGenerator.Attributes", "ModelMapperGenerator.Attributes\ModelMapperGenerator.Attributes.csproj", "{1E67F79B-B4B0-47FC-A5D6-782262489494}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{14BF3B35-5A01-4E23-A328-7084A06FF9FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14BF3B35-5A01-4E23-A328-7084A06FF9FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14BF3B35-5A01-4E23-A328-7084A06FF9FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14BF3B35-5A01-4E23-A328-7084A06FF9FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E67F79B-B4B0-47FC-A5D6-782262489494}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E67F79B-B4B0-47FC-A5D6-782262489494}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E67F79B-B4B0-47FC-A5D6-782262489494}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E67F79B-B4B0-47FC-A5D6-782262489494}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F2103713-7ECB-4F6B-BA36-8FD632931828}
+	EndGlobalSection
+EndGlobal
