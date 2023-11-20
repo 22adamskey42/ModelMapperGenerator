@@ -7,10 +7,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Buffers;
 
-namespace SourceGenTests
+namespace ModelMapperGenerator
 {
     [Generator]
-    internal class ModelMapperSourceGenerator : IIncrementalGenerator
+    public class ModelMapperSourceGenerator : IIncrementalGenerator
     {
 
         public ModelMapperSourceGenerator()
@@ -142,7 +142,7 @@ namespace SourceGenTests
             {
                 if (currentNode.Parent is NamespaceDeclarationSyntax ns)
                 {
-                    string name = ns.Name.ToFullString();
+                    string name = ns.Name.ToString();
                     return name;
                 }
                 currentNode = currentNode.Parent;
@@ -168,13 +168,13 @@ namespace SourceGenTests
             string generatedModelName = enumSymbol.Name + "Model";
             string generatedMapperName = enumSymbol.Name + "Mapper";
             ImmutableArray<ISymbol> members = enumSymbol.GetMembers();
-            string modelString = GenerateModelString(generatedModelName, ref members);
-            string mapperString = GenerateMapperString(enumSymbol.Name, enumNamespaceName, generatedMapperName, ref members);
+            string modelString = GenerateModelString(targetNamespace, generatedModelName, ref members);
+            string mapperString = GenerateMapperString(targetNamespace, enumSymbol.Name, enumNamespaceName, generatedMapperName, ref members);
             context.AddSource($"{generatedModelName}.g.cs", modelString);
             context.AddSource($"{generatedMapperName}.g.cs", mapperString);
         }
 
-        private string GenerateModelString(string generatedModelName, ref ImmutableArray<ISymbol> members)
+        private string GenerateModelString(string targetNamespace, string generatedModelName, ref ImmutableArray<ISymbol> members)
         {
             StringBuilder builder = new();
             foreach (ISymbol member in members)
@@ -197,7 +197,7 @@ namespace SourceGenTests
             string code = $$"""
                 using System;
 
-                namespace SourceGenTests.EnumModels;
+                namespace {{targetNamespace}};
 
                 public enum {{generatedModelName}}
                 {
@@ -208,7 +208,7 @@ namespace SourceGenTests
             return code;
         }
 
-        private string GenerateMapperString(string enumName, string enumNamespaceName, string generatedMapperName, ref ImmutableArray<ISymbol> members)
+        private string GenerateMapperString(string targetNamespace, string enumName, string enumNamespaceName, string generatedMapperName, ref ImmutableArray<ISymbol> members)
         {
             StringBuilder toModelBuilder = new();
             StringBuilder toDomainBuilder = new();
@@ -230,7 +230,7 @@ namespace SourceGenTests
                 using System;
                 using {{enumNamespaceName}};
                 
-                namespace SourceGenTests.EnumModels;
+                namespace {{targetNamespace}};
 
                 public static class {{generatedMapperName}}
                 {

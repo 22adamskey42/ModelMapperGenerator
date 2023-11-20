@@ -9,6 +9,13 @@
 	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 	<IncludeBuildOutput>false</IncludeBuildOutput>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageId>ModelMapperGenerator</PackageId>
+	<Description>Source generator which, based on provided enum, generates a similar enum and creates extension methods to map between these two.</Description>
+	<Tags>enum,generator,model generator, modelmappergenerator</Tags>
+	<Authors>AdamM</Authors>
+	<Copyright>Copyright (c) AdamM 2023</Copyright>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,10 +24,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="ModelMapperGenerator.Attributes" Version="0.1.0" />
   </ItemGroup>
 
   <ItemGroup>
 	<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
+
+	<ItemGroup>
+		<None Include=".\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 </Project>
