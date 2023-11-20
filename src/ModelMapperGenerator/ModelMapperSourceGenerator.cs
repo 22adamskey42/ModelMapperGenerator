@@ -183,11 +183,11 @@ namespace ModelMapperGenerator
                 {
                     if (fieldSymbol.HasConstantValue)
                     {
-                        builder.Append(fieldSymbol.Name).Append(" = ").Append(fieldSymbol.ConstantValue);
+                        builder.Append("    ").Append(fieldSymbol.Name).Append(" = ").Append(fieldSymbol.ConstantValue);
                     }
                     else
                     {
-                        builder.Append(fieldSymbol.Name);
+                        builder.Append("    ").Append(fieldSymbol.Name);
                     }
 
                     builder.Append(',').AppendLine();
@@ -195,14 +195,11 @@ namespace ModelMapperGenerator
             }
 
             string code = $$"""
-                using System;
-
                 namespace {{targetNamespace}};
 
                 public enum {{generatedModelName}}
                 {
-                    {{builder}}
-                }
+                {{builder}}}
                 """;
 
             return code;
@@ -217,12 +214,11 @@ namespace ModelMapperGenerator
             {
                 if (member is IFieldSymbol fieldSymbol)
                 {
-                    toModelBuilder.Append(enumName).Append('.').Append(fieldSymbol.Name).Append(" => ").Append(modelName).Append('.').Append(fieldSymbol.Name).Append(',').AppendLine();
-                    toDomainBuilder.Append(modelName).Append('.').Append(fieldSymbol.Name).Append(" => ").Append(enumName).Append('.').Append(fieldSymbol.Name).Append(',').AppendLine();
-
+                    toModelBuilder.Append("            ").Append(enumName).Append('.').Append(fieldSymbol.Name).Append(" => ").Append(modelName).Append('.').Append(fieldSymbol.Name).Append(',').AppendLine();
+                    toDomainBuilder.Append("            ").Append(modelName).Append('.').Append(fieldSymbol.Name).Append(" => ").Append(enumName).Append('.').Append(fieldSymbol.Name).Append(',').AppendLine();
                 }
             }
-            string unknown = "_ => throw new ArgumentOutOfRangeException(\"Unknown enum value.\")";
+            string unknown = "            _ => throw new ArgumentOutOfRangeException(\"Unknown enum value.\")";
             toModelBuilder.Append(unknown);
             toDomainBuilder.Append(unknown);
 
@@ -236,17 +232,17 @@ namespace ModelMapperGenerator
                 {
                     public static {{modelName}} ToModel(this {{enumName}} value)
                     {
-                        return value switch 
+                        return value switch
                         {
-                            {{toModelBuilder}}
+                {{toModelBuilder}}
                         };
                     }
 
-                    public static {{enumName}} ToDomain(this {{modelName}} value) 
+                    public static {{enumName}} ToDomain(this {{modelName}} value)
                     {
                         return value switch
                         {
-                            {{toDomainBuilder}}
+                {{toDomainBuilder}}
                         };
                     }
                 }
