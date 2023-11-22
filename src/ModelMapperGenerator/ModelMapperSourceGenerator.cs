@@ -153,7 +153,7 @@ namespace ModelMapperGenerator
 
         private void BuildCompilationElements(string targetNamespace, string typeName, Compilation compilation, ref SourceProductionContext context)
         {
-            if (typeName is null || string.IsNullOrWhiteSpace(targetNamespace) || string.IsNullOrWhiteSpace(typeName))
+            if (string.IsNullOrWhiteSpace(targetNamespace) || string.IsNullOrWhiteSpace(typeName))
             {
                 return;
             }

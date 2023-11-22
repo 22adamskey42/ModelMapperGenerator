@@ -29,17 +29,13 @@ namespace ModelMapperGenerator.UnitTests
                 }
                 """;
 
-            Compilation inputCompilation = CreateCompilation(sourceText);
-            ModelMapperSourceGenerator testedGenerator = new();
-            GeneratorDriver driver = CSharpGeneratorDriver.Create(testedGenerator);
+            (Compilation inputCompilation, GeneratorDriver driver) = ArrangeTest(sourceText);
 
             // Act
             driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
 
             // Assert
-            Assert.True(diagnostics.IsEmpty);
-            Assert.True(outputCompilation.SyntaxTrees.Count() == 1);
-            Assert.True(outputCompilation.GetDiagnostics().IsEmpty);
+            AssertOutputCompilation(ref diagnostics, outputCompilation, 1);
         }
 
         [Fact]
@@ -62,17 +58,13 @@ namespace ModelMapperGenerator.UnitTests
                 }
                 """;
 
-            Compilation inputCompilation = CreateCompilation(sourceText);
-            ModelMapperSourceGenerator testedGenerator = new();
-            GeneratorDriver driver = CSharpGeneratorDriver.Create(testedGenerator);
+            (Compilation inputCompilation, GeneratorDriver driver) = ArrangeTest(sourceText);
 
             // Act
             driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
 
             // Assert
-            Assert.True(diagnostics.IsEmpty);
-            Assert.True(outputCompilation.SyntaxTrees.Count() == 1);
-            Assert.True(outputCompilation.GetDiagnostics().IsEmpty);
+            AssertOutputCompilation(ref diagnostics, outputCompilation, 1);
         }
 
         [Fact]
@@ -99,17 +91,13 @@ namespace ModelMapperGenerator.UnitTests
                 }
                 """;
 
-            Compilation inputCompilation = CreateCompilation(sourceText);
-            ModelMapperSourceGenerator testedGenerator = new();
-            GeneratorDriver driver = CSharpGeneratorDriver.Create(testedGenerator);
+            (Compilation inputCompilation, GeneratorDriver driver) = ArrangeTest(sourceText);
 
             // Act
             driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
 
             // Assert
-            Assert.True(diagnostics.IsEmpty);
-            Assert.True(outputCompilation.SyntaxTrees.Count() == 3);
-            Assert.True(outputCompilation.GetDiagnostics().IsEmpty);
+            AssertOutputCompilation(ref diagnostics, outputCompilation, 3);
             string expectedModelString = """
                 namespace Test;
 
@@ -153,6 +141,21 @@ namespace ModelMapperGenerator.UnitTests
             await AssertGeneratedCode("BoxMapper.g.cs", expectedMapperString, outputCompilation).ConfigureAwait(false);
         }
 
+        private (Compilation, GeneratorDriver) ArrangeTest(string sourceText)
+        {
+            Compilation inputCompilation = CreateCompilation(sourceText);
+            ModelMapperSourceGenerator testedGenerator = new();
+            GeneratorDriver driver = CSharpGeneratorDriver.Create(testedGenerator);
+            return (inputCompilation, driver);
+        }
+
+        private void AssertOutputCompilation(ref ImmutableArray<Diagnostic> diagnostics, Compilation outputCompilation, int expectedSyntaxTreeCount)
+        {
+            Assert.True(diagnostics.IsEmpty);
+            Assert.True(outputCompilation.SyntaxTrees.Count() == expectedSyntaxTreeCount);
+            Assert.True(outputCompilation.GetDiagnostics().IsEmpty);
+        }
+
         private async Task AssertGeneratedCode(string expectedFileName, string expectedFileContent, Compilation outputCompilation)
         {
             SyntaxTree? syntaxTree = outputCompilation.SyntaxTrees.FirstOrDefault(x => x.FilePath.EndsWith(expectedFileName));
@@ -189,7 +192,7 @@ namespace ModelMapperGenerator.UnitTests
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            PortableExecutableReference reference = PortableExecutableReference.CreateFromFile(assembly.Location);
+            PortableExecutableReference reference = MetadataReference.CreateFromFile(assembly.Location);
             return reference;
         }
 
