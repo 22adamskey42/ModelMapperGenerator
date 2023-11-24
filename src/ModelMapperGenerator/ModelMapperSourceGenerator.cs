@@ -5,13 +5,14 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
-using System.Buffers;
+using System.Collections.Generic;
 
 namespace ModelMapperGenerator
 {
     [Generator]
     public class ModelMapperSourceGenerator : IIncrementalGenerator
     {
+        private static readonly SymbolDescriptorComparer _comparer = new SymbolDescriptorComparer();
 
         public ModelMapperSourceGenerator()
         {
@@ -19,125 +20,121 @@ namespace ModelMapperGenerator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<AttributeSyntax> provider = context.SyntaxProvider.CreateSyntaxProvider(
+            IncrementalValuesProvider<SymbolDescriptor?> provider = context.SyntaxProvider.CreateSyntaxProvider(
                 predicate: static (SyntaxNode node, CancellationToken ct) =>
                 {
-                    bool isAttribute = node.GetType() == typeof(AttributeSyntax);
-                    if (isAttribute)
+                    bool isEnum = node.GetType() == typeof(EnumDeclarationSyntax);
+                    return isEnum;
+                },
+                transform: static (GeneratorSyntaxContext context, CancellationToken ct) =>
+                {
+                    INamedTypeSymbol? symbol = (INamedTypeSymbol?)context.SemanticModel.GetDeclaredSymbol(context.Node);
+                    if (symbol is null)
                     {
-                        AttributeSyntax attributeNode = (AttributeSyntax)node;
-                        if (attributeNode.Name.GetType() == typeof(IdentifierNameSyntax))
+                        return null;
+                    }
+
+                    IEnumerable<SyntaxTree> trees = context.SemanticModel.Compilation.SyntaxTrees;
+                    SymbolDescriptor? result = AnalyzeSyntaxTrees(trees, symbol, ref ct);
+                    return result;
+                })
+                .Where(x => x is not null)
+                .WithComparer(_comparer);
+
+            IncrementalValueProvider<ImmutableArray<SymbolDescriptor?>> collected = provider.Collect();
+
+            context.RegisterSourceOutput(collected, Execute);
+        }
+
+        private static SymbolDescriptor? AnalyzeSyntaxTrees(IEnumerable<SyntaxTree> trees, INamedTypeSymbol symbol, ref CancellationToken cancellationToken)
+        {
+            foreach (SyntaxTree tree in trees)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                SyntaxNode root = tree.GetRoot(cancellationToken);
+                IEnumerable<SyntaxNode> descendantNodes = root.DescendantNodes(_ => true);
+                SymbolDescriptor? result = AnalyzeSyntaxNodes(descendantNodes, symbol, ref cancellationToken);
+                if (result is not null)
+                {
+                    return result;
+                }
+            }
+            
+            return null;
+        }
+
+        private static SymbolDescriptor? AnalyzeSyntaxNodes(IEnumerable<SyntaxNode> syntaxNodes, INamedTypeSymbol symbol, ref CancellationToken cancellationToken)
+        {
+            foreach (SyntaxNode node in syntaxNodes)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                bool isAttribute = node.GetType() == typeof(AttributeSyntax);
+                if (isAttribute)
+                {
+                    AttributeSyntax attributeNode = (AttributeSyntax)node;
+                    if (attributeNode.Name.GetType() == typeof(IdentifierNameSyntax))
+                    {
+                        bool isTargetAttribute = ((IdentifierNameSyntax)attributeNode.Name).Identifier.Text == "ModelGenerationTarget";
+                        if (isTargetAttribute)
                         {
-                            bool isTargetAttribute = ((IdentifierNameSyntax)attributeNode.Name).Identifier.Text == "ModelGenerationTarget";
-                            if (isTargetAttribute)
+                            if (attributeNode.ArgumentList is not null)
                             {
-                                if (attributeNode.ArgumentList is not null)
+                                SeparatedSyntaxList<AttributeArgumentSyntax> arguments = attributeNode.ArgumentList.Arguments;
+                                SymbolDescriptor? result = AnalyzeAttributeArgumentList(ref arguments, symbol, attributeNode);
+                                if (result is not null)
                                 {
-                                    SeparatedSyntaxList<AttributeArgumentSyntax> arguments = attributeNode.ArgumentList.Arguments;
-                                    foreach (AttributeArgumentSyntax argument in arguments)
-                                    {
-                                        if (argument.Expression.GetType() == typeof(ArrayCreationExpressionSyntax))
-                                        {
-                                            InitializerExpressionSyntax? initializer = ((ArrayCreationExpressionSyntax)argument.Expression).Initializer;
-                                            if (initializer is not null &&
-                                                initializer.Expressions.Count > 0 &&
-                                                initializer.Expressions[0].GetType() == typeof(TypeOfExpressionSyntax))
-                                            {
-                                                return true;
-                                            }
-                                        }
-                                    }
+                                    return result;
                                 }
                             }
                         }
                     }
-
-                    return false;
-                },
-                transform: static (GeneratorSyntaxContext context, CancellationToken ct) =>
-                {
-                    return (AttributeSyntax)context.Node;
-                }).Where(x => x is not null);
-
-
-            IncrementalValueProvider<ImmutableArray<AttributeSyntax>> collected = provider.Collect();
-            IncrementalValueProvider<(Compilation Left, ImmutableArray<AttributeSyntax> Right)> compilation = context.CompilationProvider.Combine(collected);
-            context.RegisterSourceOutput(compilation, Execute);
-        }
-
-        private void Execute(SourceProductionContext context, (Compilation Left, ImmutableArray<AttributeSyntax> Right) compilation)
-        {
-            ArrayPool<string> sharedPool = ArrayPool<string>.Shared;
-            foreach (AttributeSyntax attributeSyntax in compilation.Right)
-            {
-                string[]? rentedArray = null;
-                try
-                {
-                    InitializerExpressionSyntax? initializer = ExtractInitializer(attributeSyntax);
-                    if (initializer is null)
-                    {
-                        continue;
-                    }
-                    int count = initializer.Expressions.Count;
-                    rentedArray = sharedPool.Rent(count);
-                    ExtractTypeNames(initializer, rentedArray);
-                    string targetNamespace = FindNodeNamespace(attributeSyntax);
-                    foreach (string typeName in rentedArray)
-                    {
-                        BuildCompilationElements(targetNamespace, typeName, compilation.Left, ref context);
-                    }
-
-                }
-                finally
-                {
-                    sharedPool.Return(rentedArray);
-                }
-            }
-        }
-
-        private InitializerExpressionSyntax? ExtractInitializer(AttributeSyntax attributeSyntax)
-        {
-            if (attributeSyntax.ArgumentList is null)
-            {
-                return null;
-            }
-
-            SeparatedSyntaxList<AttributeArgumentSyntax> arguments = attributeSyntax.ArgumentList.Arguments;
-            foreach (AttributeArgumentSyntax argument in arguments)
-            {
-                if (argument.Expression.GetType() == typeof(ArrayCreationExpressionSyntax))
-                {
-                    InitializerExpressionSyntax? initializer = ((ArrayCreationExpressionSyntax)argument.Expression).Initializer;
-                    if (initializer is null)
-                    {
-                        continue;
-                    }
-
-                    return initializer;
                 }
             }
 
             return null;
         }
 
-        private void ExtractTypeNames(InitializerExpressionSyntax initializer, string[] buffer)
+        private static SymbolDescriptor? AnalyzeAttributeArgumentList(ref SeparatedSyntaxList<AttributeArgumentSyntax> argumentList, INamedTypeSymbol symbol, AttributeSyntax attributeNode)
         {
-            int position = 0;
-            foreach (ExpressionSyntax expression in initializer.Expressions)
+            foreach (AttributeArgumentSyntax argument in argumentList)
             {
-                if (expression.GetType() == typeof(TypeOfExpressionSyntax))
+                if (argument.Expression.GetType() == typeof(ArrayCreationExpressionSyntax))
                 {
-                    TypeOfExpressionSyntax typeOfExpressionSyntax = (TypeOfExpressionSyntax)expression;
-                    string typeOfExpressionValue = typeOfExpressionSyntax.Type.ToFullString();
-                    buffer[position] = typeOfExpressionValue;
-                    position++;
+                    InitializerExpressionSyntax? initializer = ((ArrayCreationExpressionSyntax)argument.Expression).Initializer;
+                    if (initializer is not null &&
+                        initializer.Expressions.Count > 0 &&
+                        initializer.Expressions[0].GetType() == typeof(TypeOfExpressionSyntax))
+                    {
+                        foreach (SyntaxNode expression in initializer.Expressions)
+                        {
+                            TypeOfExpressionSyntax expr = (TypeOfExpressionSyntax)expression;
+                            string text = expr.Type.ToString();
+                            string symbolText = symbol.ToDisplayString();
+                            if (text == symbolText)
+                            {
+                                string attributeNamespace = FindNodeNamespace(attributeNode);
+                                SymbolDescriptor desc = new(symbol, attributeNamespace);
+                                return desc;
+                            }
+                        }
+                    }
                 }
             }
+
+            return null;
         }
 
-        private string FindNodeNamespace(AttributeSyntax node)
+        private static string FindNodeNamespace(AttributeSyntax node)
         {
-            SyntaxNode currentNode = (SyntaxNode)node;
+            SyntaxNode currentNode = node;
             while (currentNode.Parent is not null)
             {
                 if (currentNode.Parent is NamespaceDeclarationSyntax ns)
@@ -151,25 +148,27 @@ namespace ModelMapperGenerator
             throw new InvalidOperationException("This should not happen");
         }
 
-        private void BuildCompilationElements(string targetNamespace, string typeName, Compilation compilation, ref SourceProductionContext context)
+        private void Execute(SourceProductionContext context, ImmutableArray<SymbolDescriptor?> symbols)
         {
-            if (string.IsNullOrWhiteSpace(targetNamespace) || string.IsNullOrWhiteSpace(typeName))
+            foreach (SymbolDescriptor? symbol in symbols)
             {
-                return;
-            }
+                if (symbol is null)
+                {
+                    continue;
+                }
 
-            INamedTypeSymbol? enumSymbol = compilation.GetTypeByMetadataName(typeName);
-            if (enumSymbol is null)
-            {
-                return;
+                BuildCompilationElements(symbol, ref context);
             }
+        }
 
-            string enumNamespaceName = enumSymbol.ContainingNamespace.ToDisplayString();
-            string generatedModelName = enumSymbol.Name + "Model";
-            string generatedMapperName = enumSymbol.Name + "Mapper";
-            ImmutableArray<ISymbol> members = enumSymbol.GetMembers();
-            string modelString = GenerateModelString(targetNamespace, generatedModelName, ref members);
-            string mapperString = GenerateMapperString(targetNamespace, enumSymbol.Name, enumNamespaceName, generatedMapperName, ref members);
+        private void BuildCompilationElements(SymbolDescriptor descriptor, ref SourceProductionContext context)
+        {
+            string enumNamespaceName = descriptor.SymbolNamespace;
+            string generatedModelName = descriptor.SymbolName + "Model";
+            string generatedMapperName = descriptor.SymbolName + "Mapper";
+            ImmutableArray<ISymbol> members = descriptor.Symbol.GetMembers();
+            string modelString = GenerateModelString(descriptor.TargetNamespace, generatedModelName, ref members);
+            string mapperString = GenerateMapperString(descriptor.TargetNamespace, descriptor.SymbolName, enumNamespaceName, generatedMapperName, ref members);
             context.AddSource($"{generatedModelName}.g.cs", modelString);
             context.AddSource($"{generatedMapperName}.g.cs", mapperString);
         }
@@ -221,7 +220,6 @@ namespace ModelMapperGenerator
             string unknown = "            _ => throw new ArgumentOutOfRangeException(\"Unknown enum value.\")";
             toModelBuilder.Append(unknown);
             toDomainBuilder.Append(unknown);
-
             string code = $$"""
                 using System;
                 using {{enumNamespaceName}};
