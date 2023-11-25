@@ -3,8 +3,8 @@
 namespace ModelMapperGenerator.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class ModelGenerationTarget : Attribute
+    public class ModelGenerationTargetAttribute : Attribute
     {
-        public Type[] FullyQualifiedTypes { get; set; }
+        public Type[] Types { get; set; }
     }
 }

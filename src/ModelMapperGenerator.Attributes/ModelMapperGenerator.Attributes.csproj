@@ -1,17 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Version>0.1.0</Version>
+	<Version>1.0.0-alpha1</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<LangVersion>11</LangVersion>
+	<LangVersion>12</LangVersion>
 	<PackageId>ModelMapperGenerator.Attributes</PackageId>
-	<Description>Attribute that is being the target for ModelMapperGenerator.</Description>
+	<Description>Source and target attributes consumed by ModelMapperGenerator.</Description>
 	<Tags>enum,generator,model generator, modelmappergenerator.attributes</Tags>
 	<Authors>AdamM</Authors>
 	<Copyright>Copyright (c) AdamM 2023</Copyright>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
+
+	<ItemGroup>
+	    <None Include=".\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 </Project>

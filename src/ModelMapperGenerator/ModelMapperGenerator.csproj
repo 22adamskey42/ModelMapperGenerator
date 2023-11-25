@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Version>0.1.2</Version>
+	<Version>1.0.0-alpha1</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<LangVersion>11</LangVersion>
+	<LangVersion>12</LangVersion>
 	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 	<IncludeBuildOutput>false</IncludeBuildOutput>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<PackageId>ModelMapperGenerator</PackageId>
-	<Description>Source generator which, based on provided enum, generates a similar enum and creates extension methods to map between these two.</Description>
-	<Tags>enum,generator,model generator, modelmappergenerator</Tags>
+	<Description>Source generator which, based on provided enum or class, generates a similar enum or class and creates extension methods to map between these two.</Description>
+	<Tags>enum generator, class generator, model generator, modelmappergenerator,</Tags>
 	<Authors>AdamM</Authors>
 	<Copyright>Copyright (c) AdamM 2023</Copyright>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -23,16 +23,23 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
-    <PackageReference Include="ModelMapperGenerator.Attributes" Version="0.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+    <PackageReference Include="ModelMapperGenerator.Attributes" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
 	<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	<None Include="$(OutputPath)\ModelMapperGenerator.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-	<ItemGroup>
-		<None Include=".\README.md" Pack="true" PackagePath="\" />
-	</ItemGroup>
+  <ItemGroup>
+	<ProjectReference Include="..\ModelMapperGenerator.Analyzers\ModelMapperGenerator.Analyzers.csproj">
+	  <ExcludeAssets>all</ExcludeAssets>
+	</ProjectReference>
+	<ProjectReference Include="..\ModelMapperGenerator.Attributes\ModelMapperGenerator.Attributes.csproj">
+	  <ExcludeAssets>all</ExcludeAssets>
+    </ProjectReference>
+  </ItemGroup>
 
 </Project>

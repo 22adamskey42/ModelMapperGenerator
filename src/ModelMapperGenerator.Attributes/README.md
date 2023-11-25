@@ -1,0 +1,1 @@
+Attribute package for ModelMapperGenerator package.

@@ -1,0 +1,80 @@
+pr:
+  branches:
+    include:
+    - master
+
+trigger:
+  branches:
+    include:
+    - master
+    - features/*
+
+pool:
+  name: default
+
+variables:
+- group: modelmappergenerator-group
+
+stages:
+- stage: build  
+  displayName: 'Build solution'
+  jobs:
+  - job: build
+    steps:
+    - script: dotnet build -c release
+
+- stage: test
+  displayName: 'Run tests'
+  condition: succeeded()
+  jobs:
+  - job: test
+    steps:
+    - checkout: none
+    - script: dotnet test -c release --no-build --logger:"trx;LogFileName=.\TestResults.xml" --collect:"XPlat Code Coverage"
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/TestResults.xml'
+    - task: PublishCodeCoverageResults@2
+      inputs:
+        summaryFileLocation: '**/coverage.cobertura.xml'
+
+- stage: pack
+  displayName: 'Create packages'
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - job: pack
+    steps:
+    - checkout: none
+    - script: dotnet pack -c release --no-build -o ./package
+
+- stage: deploy_test
+  displayName: 'Deploy to test feed'
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - deployment: deploy_test
+    pool: default
+    environment: 'test'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: none
+          - task: NuGetAuthenticate@1
+          - script: |
+              dotnet nuget push --source "$(nuget-test-feed)" --api-key $(nuget-test-feed-key) ./package/ModelMapperGenerator*.nupkg --skip-duplicate
+
+- stage: deploy_prod
+  displayName: 'Deploy to prod feed'
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  jobs:
+  - deployment: deploy_prod
+    pool: default
+    environment: 'prod'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: none
+          - script: |
+              dotnet nuget push --source "$(nuget-prod-feed)" --api-key $(nuget-prod-feed-key) ./package/ModelMapperGenerator*.nupkg --skip-duplicate
