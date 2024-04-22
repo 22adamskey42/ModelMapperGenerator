@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Version>1.0.0-alpha2</Version>
+	<Version>1.0.0-alpha4</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -24,7 +24,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-    <PackageReference Include="ModelMapperGenerator.Attributes" Version="1.0.0-alpha2" />
+    <PackageReference Include="ModelMapperGenerator.Attributes" Version="1.0.0-alpha4" />
   </ItemGroup>
 
   <ItemGroup>
