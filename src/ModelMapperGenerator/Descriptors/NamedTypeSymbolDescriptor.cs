@@ -18,6 +18,11 @@ namespace ModelMapperGenerator.Descriptors
 
         public static NamedTypeSymbolDescriptor? Create(INamedTypeSymbol symbol)
         {
+            if (symbol.TypeKind != TypeKind.Class && symbol.TypeKind != TypeKind.Enum)
+            {
+                return null;
+            }
+
             ImmutableArray<ISymbol> members = symbol.GetMembers();
             FieldSymbolDescriptor[]? enumDescriptors = null;
             PropertySymbolDescriptor[]? classDescriptors = null;
@@ -113,7 +118,7 @@ namespace ModelMapperGenerator.Descriptors
             {
                 TypeKind.Enum => this.EnumSymbolMembers.SequenceEqual(other.EnumSymbolMembers),
                 TypeKind.Class => this.ClassSymbolMembers.SequenceEqual(other.ClassSymbolMembers),
-                _ => throw new ArgumentOutOfRangeException("Not supported type kind")
+                _ => throw new ArgumentOutOfRangeException($"Not supported type kind - {this.Symbol?.TypeKind}")
             };
 
             return sameMembers;

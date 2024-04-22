@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using ModelMapperGenerator.TestInfrastructure;
 using ModelMapperGenerator.UnitTests.Infrastructure;
+using System;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Xunit;
@@ -740,7 +741,48 @@ namespace ModelMapperGenerator.UnitTests
                 }
                 """;
             await AssertHelpers.AssertGeneratedCodeAsync("TargetNamespace.LocalSource.BoxTypeMapper.g.cs", expectedBoxTypeMapper, outputCompilation);
+        }
 
+        [Fact]
+        public void SourceGenerator_DoesNotThrow_ForErrorKindSymbols()
+        {
+            // Arrange
+            string source = """
+                using System;
+                using ModelMapperGenerator.Attributes;
+
+                namespace TargetNamespace
+                {
+                    [ModelGenerationTarget(Types = new Type[] {
+                        typeof(BoxType)
+                    })]
+                    public class Hook {}
+                }
+                """;
+
+            string updatedSource = """
+                using System;
+                using ModelMapperGenerator.Attributes;
+
+                namespace TargetNamespace
+                {
+                    [ModelGenerationTarget(Types = new Type[] {
+                        typeof(BoxType),
+                    })]
+                    public class Hook {}
+                }
+                """;
+
+            (Compilation inputCompilation, GeneratorDriver driver) = ArrangeHelpers.ArrangeTest(source);
+
+            // Act
+            driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
+            Compilation newCompilation = CompilationBuilder.CreateCompilation(updatedSource);
+            Exception recordedException = Record.Exception(() =>
+                driver.RunGeneratorsAndUpdateCompilation(newCompilation, out Compilation secondOutputCompilation, out ImmutableArray<Diagnostic> secondDiagnostics));
+
+            // Assert
+            Assert.Null(recordedException);
         }
     } 
 }

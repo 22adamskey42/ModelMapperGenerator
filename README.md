@@ -1,6 +1,6 @@
 # ModelMapperGenerator
 
-[![Build Status](https://dev.azure.com/22adamskey42/ModelMapperGenerator/_apis/build/status%2F22adamskey42.testrepo?branchName=master&stageName=test)](https://dev.azure.com/22adamskey42/ModelMapperGenerator/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/22adamskey42/ModelMapperGenerator/_apis/build/status%2F22adamskey42.ModelMapperGenerator?branchName=master&stageName=Run%20tests&jobName=test)](https://dev.azure.com/22adamskey42/ModelMapperGenerator/_build/latest?definitionId=2&branchName=master)
 
 This source generator generates enums and classes based on existing enums and classes.  
 It contains built in analyzers which ensure the correct usage of the generator.

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Version>1.0.0-alpha1</Version>
+	<Version>1.0.0-alpha5</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -16,6 +16,8 @@
 	<Copyright>Copyright (c) AdamM 2023</Copyright>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<RepositoryUrl>https://github.com/22adamskey42/ModelMapperGenerator.git</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +26,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-    <PackageReference Include="ModelMapperGenerator.Attributes" Version="1.0.0" />
+    <PackageReference Include="ModelMapperGenerator.Attributes" Version="1.0.0-alpha5" />
   </ItemGroup>
 
   <ItemGroup>
