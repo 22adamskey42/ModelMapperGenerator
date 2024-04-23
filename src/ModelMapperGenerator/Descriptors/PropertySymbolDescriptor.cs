@@ -3,16 +3,33 @@ using System.Collections.Generic;
 
 namespace ModelMapperGenerator.Descriptors
 {
-    internal readonly struct PropertySymbolDescriptor(IPropertySymbol symbol)
+    internal readonly struct PropertySymbolDescriptor
     {
         private readonly List<string> _returnTypeRelatedNamespaces = [];
 
-        public readonly string ReturnTypeNamespace { get; } = symbol.Type.ContainingNamespace.Name;
-        public readonly string ReturnTypeName { get; } = symbol.Type.Name;
-        public readonly string ReturnTypeFullyQualifiedName { get; } = symbol.Type.ToDisplayString();
-        public readonly string PropertyName { get; } = symbol.Name;
-        public readonly bool HasPublicGetter { get; } = symbol.GetMethod is not null && symbol.GetMethod.DeclaredAccessibility == Accessibility.Public;
-        public readonly bool HasPublicSetter { get; } = symbol.SetMethod is not null && symbol.SetMethod.DeclaredAccessibility == Accessibility.Public;
+        public readonly bool IsNullable { get; }
+        public readonly TypeKind ReturnTypeKind { get; }
+        public readonly string ReturnTypeNamespace { get; }
+        public readonly string ReturnTypeName { get; }
+        public readonly string ReturnTypeFullyQualifiedName { get; }
+        public readonly string PropertyName { get; }
+        public readonly bool HasPublicGetter { get; }
+        public readonly bool HasPublicSetter { get; }
+
+        private PropertySymbolDescriptor(IPropertySymbol propertySymbol)
+        {
+            PropertyName = propertySymbol.Name;
+            HasPublicGetter = propertySymbol.GetMethod is not null && propertySymbol.GetMethod.DeclaredAccessibility == Accessibility.Public;
+            HasPublicSetter = propertySymbol.SetMethod is not null && propertySymbol.SetMethod.DeclaredAccessibility == Accessibility.Public;
+            IsNullable = propertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
+            ITypeSymbol actualType = IsNullable
+                ? ((INamedTypeSymbol)propertySymbol.Type).TypeArguments[0]
+                : (INamedTypeSymbol)propertySymbol.Type;
+            ReturnTypeNamespace = actualType.ContainingNamespace.Name;
+            ReturnTypeName = actualType.Name;
+            ReturnTypeFullyQualifiedName = actualType.ToDisplayString();
+            ReturnTypeKind = actualType.TypeKind;
+        }
 
         public static void CreateAndInsert(PropertySymbolDescriptor[] array, IPropertySymbol property, ref int currentIndex)
         {

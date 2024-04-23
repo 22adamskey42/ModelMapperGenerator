@@ -211,7 +211,7 @@ namespace ModelMapperGenerator.UnitTests
         }
 
         [Fact]
-        public async Task GeneratesModelAndMapper_WhenSourceAndTargetAttributesAreUsedAsync_Class()
+        public async Task GeneratesModelAndMapper_TargetAttributesIsUsedAsync_Class()
         {
             // Arrange
             string sourceText = """
@@ -516,7 +516,7 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToModel(),
-                                Address = value.Address.ToModel(),
+                                Address = value.Address?.ToModel(),
 
                             };
 
@@ -529,7 +529,7 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToDomain(),
-                                Address = value.Address.ToDomain(),
+                                Address = value.Address?.ToDomain(),
 
                             };
 
@@ -724,7 +724,7 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToModel(),
-                                Organization = value.Organization.ToModel(),
+                                Organization = value.Organization?.ToModel(),
                                 Address = value.Address,
                                 PersonStatus = value.PersonStatus,
 
@@ -739,7 +739,7 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToDomain(),
-                                Organization = value.Organization.ToDomain(),
+                                Organization = value.Organization?.ToDomain(),
                                 Address = value.Address,
                                 PersonStatus = value.PersonStatus,
 
@@ -958,8 +958,8 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToModel(),
-                                Organization = value.Organization.ToModel(),
-                                Address = value.Address.ToModel(),
+                                Organization = value.Organization?.ToModel(),
+                                Address = value.Address?.ToModel(),
                                 PersonStatus = value.PersonStatus.ToModel(),
 
                             };
@@ -973,8 +973,8 @@ namespace ModelMapperGenerator.UnitTests
                             {
                                 FirstName = value.FirstName,
                                 PersonType = value.PersonType.ToDomain(),
-                                Organization = value.Organization.ToDomain(),
-                                Address = value.Address.ToDomain(),
+                                Organization = value.Organization?.ToDomain(),
+                                Address = value.Address?.ToDomain(),
                                 PersonStatus = value.PersonStatus.ToDomain(),
 
                             };
@@ -1248,7 +1248,7 @@ namespace ModelMapperGenerator.UnitTests
                             PersonModel model = new PersonModel()
                             {
                                 FirstName = value.FirstName,
-                                FirstElement = value.FirstElement.ToModel(),
+                                FirstElement = value.FirstElement?.ToModel(),
                                 SecondElement = value.SecondElement.ToModel(),
 
                             };
@@ -1261,7 +1261,7 @@ namespace ModelMapperGenerator.UnitTests
                             Person<Classes.Address, Enums.Size> domain = new Person<Classes.Address, Enums.Size>()
                             {
                                 FirstName = value.FirstName,
-                                FirstElement = value.FirstElement.ToDomain(),
+                                FirstElement = value.FirstElement?.ToDomain(),
                                 SecondElement = value.SecondElement.ToDomain(),
                 
                             };
@@ -1568,6 +1568,140 @@ namespace ModelMapperGenerator.UnitTests
                 }
                 """;
             await AssertHelpers.AssertGeneratedCodeAsync("Test.Classes.AddressMapper.g.cs", expectedAddressMapperString, outputCompilation);
+        }
+
+        [Fact]
+        public async Task GeneratesModelAndMapper_WhenClassContainsTargetEnum_AsNullableProperty()
+        {
+            string source = """
+                using System;
+                using ModelMapperGenerator.Attributes;
+
+                namespace SourceNamespace
+                {
+                    public enum BoxType
+                    {
+                        Big,
+                        Small
+                    }
+
+                    public class Person
+                    {
+                        public string Name { get; set; }
+                        public BoxType? BoxType { get; set; }
+                    }
+                }
+
+                namespace TargetNamespace
+                {
+                    [ModelGenerationTarget(Types = new Type[]
+                    {
+                        typeof(SourceNamespace.Person),
+                        typeof(SourceNamespace.BoxType),
+                    })]
+                    public class Hook { }
+                }
+                """;
+            (Compilation inputCompilation, GeneratorDriver driver) = ArrangeHelpers.ArrangeTest(source);
+
+            // Act
+            driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out Compilation outputCompilation, out ImmutableArray<Diagnostic> diagnostics);
+
+            // Assert
+            AssertHelpers.AssertOutputCompilation(ref diagnostics, outputCompilation, 5);
+
+            string expectedPersonModel = """
+                namespace TargetNamespace
+                {
+                    public class PersonModel
+                    {
+                        public string Name { get; set; }
+                        public TargetNamespace.BoxTypeModel? BoxType { get; set; }
+
+                    }
+                }
+                """;
+            await AssertHelpers.AssertGeneratedCodeAsync("TargetNamespace.SourceNamespace.PersonModel.g.cs", expectedPersonModel, outputCompilation);
+
+            string expectedPersonMapper = """
+                using SourceNamespace;
+
+                namespace TargetNamespace
+                {
+                    public static class PersonMapper
+                    {
+                        public static PersonModel ToModel(this Person value)
+                        {
+                            PersonModel model = new PersonModel()
+                            {
+                                Name = value.Name,
+                                BoxType = value.BoxType?.ToModel(),
+
+                            };
+
+                            return model;
+                        }
+
+                        public static Person ToDomain(this PersonModel value)
+                        {
+                            Person domain = new Person()
+                            {
+                                Name = value.Name,
+                                BoxType = value.BoxType?.ToDomain(),
+
+                            };
+
+                            return domain;
+                        }
+                    }
+                }
+                """;
+            await AssertHelpers.AssertGeneratedCodeAsync("TargetNamespace.SourceNamespace.PersonMapper.g.cs", expectedPersonMapper, outputCompilation);
+
+            string expectedBoxTypeModelString = """
+                namespace TargetNamespace
+                {
+                    public enum BoxTypeModel
+                    {
+                        Big = 0,
+                        Small = 1,
+
+                    }
+                }
+                """;
+            await AssertHelpers.AssertGeneratedCodeAsync("TargetNamespace.SourceNamespace.BoxTypeModel.g.cs", expectedBoxTypeModelString, outputCompilation);
+
+            string expectedBoxTypeMapperString = """
+                using System;
+                using SourceNamespace;
+
+                namespace TargetNamespace
+                {
+                    public static class BoxTypeMapper
+                    {
+                        public static BoxTypeModel ToModel(this BoxType value)
+                        {
+                            return value switch
+                            {
+                                BoxType.Big => BoxTypeModel.Big,
+                                BoxType.Small => BoxTypeModel.Small,
+                                _ => throw new ArgumentOutOfRangeException("Unknown enum value")
+                            };
+                        }
+
+                        public static BoxType ToDomain(this BoxTypeModel value)
+                        {
+                            return value switch
+                            {
+                                BoxTypeModel.Big => BoxType.Big,
+                                BoxTypeModel.Small => BoxType.Small,
+                                _ => throw new ArgumentOutOfRangeException("Unknown enum value")
+                            };
+                        }
+                    }
+                }
+                """;
+            await AssertHelpers.AssertGeneratedCodeAsync("TargetNamespace.SourceNamespace.BoxTypeMapper.g.cs", expectedBoxTypeMapperString, outputCompilation);
         }
     }
 }

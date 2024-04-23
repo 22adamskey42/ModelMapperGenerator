@@ -69,8 +69,8 @@ namespace ModelMapperGenerator.UnitTests.Infrastructure
             Assert.Equal(expectedSyntaxTreeCount, outputCompilation.SyntaxTrees.Count());
             if (verifyDiagsEmpty)
             {
-                var diags = outputCompilation.GetDiagnostics();
-                Assert.True(outputCompilation.GetDiagnostics().IsEmpty);
+                ImmutableArray<Diagnostic> diags = outputCompilation.GetDiagnostics();
+                Assert.True(diags.IsEmpty);
             }
         }
 
