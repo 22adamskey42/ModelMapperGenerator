@@ -27,7 +27,7 @@ namespace SomeNamespace
 ```
 
 ### Hook class
-Uses ModelGenerationTargetAttribute, coming from ModelMapperGeneration.Attributes nuget package. Generated mappers and models will be placed in this namespace
+Uses ModelGenerationTargetAttribute, coming from ModelMapperGenerator.Attributes nuget package. Generated mappers and models will be placed in this namespace
 ```C#
 using ModelMapperGenerator.Attributes;
 
