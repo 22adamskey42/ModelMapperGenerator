@@ -45,6 +45,11 @@ namespace ModelMapperGenerator.CompilationElementBuilders
                     builder.Append(property.ReturnTypeFullyQualifiedName);
                 }
 
+                if (property.IsNullable)
+                {
+                    builder.Append(QuestionMark);
+                }
+
                 builder.Append(Whitespace).Append(property.PropertyName).Append(Whitespace).Append(GetSet).AppendLine();
             }
 
@@ -76,11 +81,12 @@ namespace ModelMapperGenerator.CompilationElementBuilders
                 }
 
                 bool propertyTypeIsRelatedTypeInNamespace = property.ReturnTypeIsRelatedTypeInNamespace(targetDescriptor.TargetNamespace);
+                bool shouldBeNullable = property.IsNullable || property.ReturnTypeKind == TypeKind.Class;
                 toModelBuilder.Append(QuadrupleIndent).Append(property.PropertyName).Append(Assignment).Append(Value).Append(property.PropertyName);
 
                 if (propertyTypeIsRelatedTypeInNamespace)
                 {
-                    toModelBuilder.Append(ToModel);
+                    toModelBuilder.Append(shouldBeNullable ? ToModelNullSafe : ToModel);
                 }
 
                 toModelBuilder.Append(Comma).AppendLine();
@@ -90,7 +96,7 @@ namespace ModelMapperGenerator.CompilationElementBuilders
                     toDomainBuilder.Append(QuadrupleIndent).Append(property.PropertyName).Append(Assignment).Append(Value).Append(property.PropertyName);
                     if (propertyTypeIsRelatedTypeInNamespace)
                     {
-                        toDomainBuilder.Append(ToDomain);
+                        toDomainBuilder.Append(shouldBeNullable ? ToDomainNullSafe : ToDomain);
                     }
 
                     toDomainBuilder.Append(Comma).AppendLine();

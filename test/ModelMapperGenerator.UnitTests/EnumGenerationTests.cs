@@ -68,7 +68,7 @@ namespace ModelMapperGenerator.UnitTests
         }
 
         [Fact]
-        public async Task GeneratesModelAndMapper_WhenSourceAndTargetAttributesAreUsed_Enum()
+        public async Task GeneratesModelAndMapper_WhenTargetAttributeIsUsed_Enum()
         {
             // Arrange
             string sourceText = """
@@ -143,5 +143,6 @@ namespace ModelMapperGenerator.UnitTests
                 """;
             await AssertHelpers.AssertGeneratedCodeAsync("Test.Enums.BoxMapper.g.cs", expectedMapperString, outputCompilation);
         }
+
     }
 }
