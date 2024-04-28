@@ -1,9 +1,9 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using ModelMapperGenerator.Analyzer.UnitTests.Infrastructure;
+using ModelMapperGenerator.Analyzers.UnitTests.Infrastructure;
 using System.Collections.Immutable;
 
-namespace ModelMapperGenerator.Analyzer.UnitTests
+namespace ModelMapperGenerator.Analyzers.UnitTests
 {
     public class TargetAttributeUsageAnalyzerUnitTests
     {

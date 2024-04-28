@@ -6,6 +6,7 @@
 	<LangVersion>12</LangVersion>  
     <PackageId>ModelMapperGenerator.Analyzers</PackageId>
 	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

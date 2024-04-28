@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 using ModelMapperGenerator.TestInfrastructure;
 using System.Collections.Immutable;
 
-namespace ModelMapperGenerator.Analyzer.UnitTests.Infrastructure
+namespace ModelMapperGenerator.Analyzers.UnitTests.Infrastructure
 {
     internal static class ArrangeHelpers
     {

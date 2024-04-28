@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace ModelMapperGenerator.Analyzer.UnitTests.Infrastructure
+namespace ModelMapperGenerator.Analyzers.UnitTests.Infrastructure
 {
     internal sealed class DiagnosticsAssertionContext
     {

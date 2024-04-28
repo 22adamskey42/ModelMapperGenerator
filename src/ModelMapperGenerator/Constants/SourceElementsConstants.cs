@@ -8,6 +8,13 @@
         public const char LesserThan = '<';
         public const char GreaterThan = '>';
         public const char QuestionMark = '?';
+        public const char OpeningBrace = '{';
+        public const char ClosingBrace = '}';
+        public const char Semicolon = ';';
+        public const char GenericT = 'T';
+        public const string Namespace = "namespace";
+        public const string PublicStaticClass = "public static class";
+        public const string Using = "using";
         public const string Arrow = " => ";
         public const string Model = "Model";
         public const string Mapper = "Mapper";

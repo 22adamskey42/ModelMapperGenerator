@@ -7,6 +7,7 @@ namespace ModelMapperGenerator.Descriptors
     {
         private readonly List<string> _returnTypeRelatedNamespaces = [];
 
+        public readonly bool OriginalDefinitionGeneric { get; }
         public readonly bool IsNullable { get; }
         public readonly TypeKind ReturnTypeKind { get; }
         public readonly string ReturnTypeNamespace { get; }
@@ -22,6 +23,7 @@ namespace ModelMapperGenerator.Descriptors
             HasPublicGetter = propertySymbol.GetMethod is not null && propertySymbol.GetMethod.DeclaredAccessibility == Accessibility.Public;
             HasPublicSetter = propertySymbol.SetMethod is not null && propertySymbol.SetMethod.DeclaredAccessibility == Accessibility.Public;
             IsNullable = propertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
+            OriginalDefinitionGeneric = propertySymbol.OriginalDefinition?.Type?.TypeKind == TypeKind.TypeParameter;
             ITypeSymbol actualType = IsNullable
                 ? ((INamedTypeSymbol)propertySymbol.Type).TypeArguments[0]
                 : (INamedTypeSymbol)propertySymbol.Type;
