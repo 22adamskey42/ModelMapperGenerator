@@ -3,15 +3,18 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using ModelMapperGenerator.Analyzer.Constants;
+using ModelMapperGenerator.Analyzers.Descriptors;
 using ModelMapperGenerator.Analyzers.Infrastructure;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace ModelMapperGenerator.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     internal sealed class TypesWithSameNameNotAllowedAnalyzer : DiagnosticAnalyzer
     {
+        private static readonly TypeNameDescriptorComparer _comparer = new();
         private static readonly DiagnosticDescriptor _descriptor = new(
             id: TypesWithSameNameNotAllowedAnalyzerConstants.DiagnosticId,
             title: TypesWithSameNameNotAllowedAnalyzerConstants.Title,
@@ -39,7 +42,7 @@ namespace ModelMapperGenerator.Analyzers
                     return;
                 }
 
-                Dictionary<string, List<Location>> dictionary = new();
+                Dictionary<TypeNameDescriptor, List<Location>> dictionary = new(_comparer);
 
                 AttributeSyntax node = (AttributeSyntax)syntaxNodeContext.Node;
                 IEnumerable<SyntaxNode> descendants = node.DescendantNodes();
@@ -51,35 +54,32 @@ namespace ModelMapperGenerator.Analyzers
                         continue;
                     }
 
-                    string? typeName = GetTypeNameFromTypeOfSyntaxNode(descendant);
-                    if (typeName is null)
+                    TypeNameDescriptor typeName = GetTypeNameFromTypeOfSyntaxNode(descendant);
+                    if (!typeName.HasValue)
                     {
                         continue;
                     }
 
-                    bool hasKey = dictionary.ContainsKey(typeName);
+                    TypeNameDescriptor key = dictionary.Keys.FirstOrDefault(x => x == typeName);
+
                     Location location = descendant.GetLocation();
-                    if (hasKey)
+                    if (key.HasValue)
                     {
-                        dictionary[typeName].Add(location);
+                        dictionary[key].Add(location);
                     }
                     else
                     {
-                        dictionary[typeName] = new() { location };
+                        dictionary[typeName] = [location];
                     }
                 }
 
-                foreach (string key in dictionary.Keys)
+                foreach (TypeNameDescriptor key in dictionary.Keys)
                 {
-                    if (dictionary[key].Count < 2)
-                    {
-                        continue;
-                    }
-                    else
+                    if (dictionary[key].Count >= 2)
                     {
                         foreach (Location location in dictionary[key])
                         {
-                            ReportDiagnostic(ref syntaxNodeContext, location, key);
+                            ReportDiagnostic(ref syntaxNodeContext, location, key.TypeName!);
                         }
                     }
                 }
@@ -93,21 +93,20 @@ namespace ModelMapperGenerator.Analyzers
             context.ReportDiagnostic(diagnostic);
         }
 
-        private string? GetTypeNameFromTypeOfSyntaxNode(SyntaxNode node)
+        private TypeNameDescriptor GetTypeNameFromTypeOfSyntaxNode(SyntaxNode node)
         {
             TypeOfExpressionSyntax typeOfSyntax = (TypeOfExpressionSyntax)node;
             TypeSyntax type = typeOfSyntax.Type;
-            if (type is QualifiedNameSyntax qualifiedName)
+
+            TypeNameDescriptor desc = type switch
             {
-                SyntaxToken identifier = qualifiedName.Right.Identifier;
-                return identifier.Text;
-            }
-            else if (type is IdentifierNameSyntax identifierName)
-            {
-                SyntaxToken identifier = identifierName.Identifier;
-                return identifier.Text;
-            }
-            return null;
+                QualifiedNameSyntax qualifiedName => new(qualifiedName.Right.Identifier.Text),
+                IdentifierNameSyntax identifierName => new(identifierName.Identifier.Text),
+                GenericNameSyntax genericName => new(genericName.Identifier.Text, genericName.TypeArgumentList.ToFullString()),
+                _ => new()
+            };
+
+            return desc;
         }
     }
 }

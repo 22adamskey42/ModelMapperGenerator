@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using ModelMapperGenerator.Analyzers.Infrastructure;
 
-namespace ModelMapperGenerator.Analyzer
+namespace ModelMapperGenerator.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     internal class RecordsNotSupportedAnalyzer : DiagnosticAnalyzer

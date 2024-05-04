@@ -208,7 +208,7 @@ namespace TargetNamespace
             {
                 Name = value.Name,
                 Age = value.Age,
-                Address = value.Address.ToModel(), // Address to AddressModel
+                Address = value.Address?.ToModel(), // Address to AddressModel
                 Grade = value.Grade, // Grade
 
             };
@@ -222,8 +222,85 @@ namespace TargetNamespace
             {
                 Name = value.Name,
                 Age = value.Age,
-                Address = value.Address.ToDomain(), // AddressModel to Address
+                Address = value.Address?.ToDomain(), // AddressModel to Address
                 Grade = value.Grade, // Grade
+
+            };
+
+            return domain;
+        }
+    }
+}
+```
+
+## Generic classes
+
+For generic classses, if type arguments are used in ModelGenerationTarget attribute, then models of those classes will be used in the generic class model
+
+### Classes and hooks
+```C#
+namespace SomeNamespace
+{
+    public class Person<T>
+    {
+        public string Name { get; set; }
+        public T Document { get; set; }
+    }
+
+    public class IdentityCard 
+    {
+        public Guid IdentityCardId { get; set; }
+    }
+}
+
+using ModelMapperGenerator.Attributes;
+
+namespace TargetNamespace
+{
+    [ModelGenerationTarget(Types = new Type[]
+    {
+        typeof(SomeNamespace.Person<IdentityCard>),
+        typeof(SomeNamespace.IdentityCard)
+    })]
+    public class Hook { }
+}
+```
+
+### Generated code
+Person class only, others omitted for brevity
+```C#
+namespace TargetNamespace
+{
+    public class PersonModel<T0>
+    {
+        public string Name { get; set; }
+        public T0 Document { get; set; }
+
+    }
+}
+
+namespace TargetNamespace
+{
+    public static class PersonMapper
+    {
+        public static PersonModel<IdentityCardModel> ToModel(this Person<IdentityCard> value)
+        {
+            PersonModel<IdentityCardModel> model = new PersonModel<IdentityCardModel>()
+            {
+                Name = value.Name,
+                Document = value.Document?.ToModel(),
+
+            };
+
+            return model;
+        }
+
+        public static Person<IdentityCard> ToDomain(this PersonModel<IdentityCardModel> value)
+        {
+            Person<IdentityCard> domain = new Person<IdentityCard>()
+            {
+                Name = value.Name,
+                Document = value.Document?.ToDomain(),
 
             };
 
@@ -308,6 +385,56 @@ namespace TargetNamespace
     {
         typeof(SomeNamespace.Person),
         typeof(AnotherNamespace.Person),
+    })]
+    public class Hook { }
+}
+```
+
+However, using generic types with different type parameters is allowed:
+
+```C#
+namespace SomeNamespace
+{
+    public class Person<T>
+    {
+        public string Name { get; set; }
+        public T Something { get; set; }
+    }
+}
+
+// Allowed
+using ModelMapperGenerator.Attributes;
+
+namespace TargetNamespace
+{
+    [ModelGenerationTarget(Types = new Type[]
+    {
+        typeof(SomeNamespace.Person<int>),
+        typeof(SomeNamespace.Person<Guid>),
+    })]
+    public class Hook { }
+}
+```
+
+- Using open generics in generation hook
+```C#
+namespace SomeNamespace
+{
+    public class Person<T>
+    {
+        public string Name { get; set; }
+        public T Job { get; set; }
+    }
+}
+
+// Error - open generics are not supported
+using ModelMapperGenerator.Attributes;
+
+namespace TargetNamespace
+{
+    [ModelGenerationTarget(Types = new Type[]
+    {
+        typeof(SomeNamespace.Person<>),
     })]
     public class Hook { }
 }

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ModelMapperGenerator.Analyzers.UnitTests")]
 
-namespace ModelMapperGenerator.Analyzer
+namespace ModelMapperGenerator.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     internal class TargetAttributeUsageAnalyzer : DiagnosticAnalyzer

@@ -5,6 +5,7 @@ using ModelMapperGenerator.CompilationElementBuilders;
 using ModelMapperGenerator.Descriptors;
 using System.Runtime.CompilerServices;
 using ModelMapperGenerator.Constants;
+using System.Collections.Generic;
 
 [assembly: InternalsVisibleTo("ModelMapperGenerator.UnitTests")]
 
@@ -55,8 +56,17 @@ namespace ModelMapperGenerator
             foreach (var target in targets)
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
+                Dictionary<string, List<NamedTypeSymbolDescriptor>>? genericTypes = null;
                 foreach (var source in target.ContainedTypes)
                 {
+                    if (source.IsGeneric)
+                    {
+                        source.MarkRelatedProperties(target);
+                        AddGenericToDictionary(ref genericTypes, source);
+                        
+                        continue;
+                    }
+
                     if (source.Symbol.TypeKind == TypeKind.Enum)
                     {
                         EnumCompilationBuilder.BuildCompilationElements(source, target, ref context);
@@ -67,6 +77,22 @@ namespace ModelMapperGenerator
                         ClassCompilationBuilder.BuildCompilationElements(source, target, ref context);
                     }
                 }
+
+                GenericClassCompilationBuilder.BuildCompilationElements(genericTypes, target, ref context);
+            }
+        }
+
+        private static void AddGenericToDictionary(ref Dictionary<string, List<NamedTypeSymbolDescriptor>>? genericTypes, NamedTypeSymbolDescriptor descriptor)
+        {
+            genericTypes ??= new Dictionary<string, List<NamedTypeSymbolDescriptor>>();
+            bool hasKey = genericTypes.ContainsKey(descriptor.SymbolFullyQualifiedName);
+            if (hasKey)
+            {
+                genericTypes[descriptor.SymbolFullyQualifiedName].Add(descriptor);
+            }
+            else
+            {
+                genericTypes[descriptor.SymbolFullyQualifiedName] = [descriptor];
             }
         }
 

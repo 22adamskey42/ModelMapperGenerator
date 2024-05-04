@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis;
-using ModelMapperGenerator.Analyzer.UnitTests.Infrastructure;
+using ModelMapperGenerator.Analyzers.UnitTests.Infrastructure;
 using System.Collections.Immutable;
 
 namespace ModelMapperGenerator.Analyzers.UnitTests
@@ -71,6 +71,60 @@ namespace ModelMapperGenerator.Analyzers.UnitTests
         }
 
         [Fact]
+        public async Task ReportsDiagnostics_WhenGenericTypeHasTheSameNameAsNonGeneric()
+        {
+            // Arrange
+            string source = """
+                using System;
+                using ModelMapperGenerator.Attributes;
+                using FirstSourceNamespace;
+                using SecondSourceNamespace;
+
+                namespace TargetNamespace
+                {
+                    [ModelGenerationTarget(Types = new Type[] {
+                        typeof(Person<int>),
+                        typeof(Person),
+                    })]
+                    public class FirstHook {}
+                }
+                
+                namespace FirstSourceNamespace
+                {
+                    public class Person<T>
+                    {
+                        public Guid Id {get;set;}
+                        public T Grade {get;set;}
+                    }
+                }
+
+                namespace SecondSourceNamespace
+                {
+                    public class Person
+                    {
+                        public Guid Id {get;set;}
+                        public int Grade {get;set;}
+                    }
+                }
+                """;
+
+            TypesWithSameNameNotAllowedAnalyzer analyzer = new();
+            (CompilationWithAnalyzers compilationWithAnalyzers, Compilation compilation) = ArrangeHelpers.ArrangeTest(source, analyzer);
+            string[] expectedMessages = [
+                "(9,9): error MMG3: Multiple types with name Person have been placed on the same ModelGenerationTargetAttribute, which is not supported",
+                "(10,9): error MMG3: Multiple types with name Person have been placed on the same ModelGenerationTargetAttribute, which is not supported"
+            ];
+            DiagnosticsAssertionContext context = CreateAssertionContext(compilation, 2, expectedMessages);
+
+            // Act
+            AnalysisResult result = await compilationWithAnalyzers.GetAnalysisResultAsync(CancellationToken.None);
+
+            // Assert
+            ImmutableArray<Diagnostic> diags = AssertHelpers.AssertAnalysisResult<TypesWithSameNameNotAllowedAnalyzer>(result);
+            AssertHelpers.AssertGeneratedDiagnostics(ref diags, context);
+        }
+
+        [Fact]
         public async Task DoesNotReportDiagnostics_WhenAllTypesHaveDifferentNames()
         {
             // Arrange
@@ -104,7 +158,7 @@ namespace ModelMapperGenerator.Analyzers.UnitTests
                 }
                 """;
             TypesWithSameNameNotAllowedAnalyzer analyzer = new();
-            (CompilationWithAnalyzers compilationWithAnalyzers, Compilation compilation) = ArrangeHelpers.ArrangeTest(source, analyzer);
+            (CompilationWithAnalyzers compilationWithAnalyzers, _) = ArrangeHelpers.ArrangeTest(source, analyzer);
 
             // Act
             AnalysisResult result = await compilationWithAnalyzers.GetAnalysisResultAsync(CancellationToken.None);
@@ -158,7 +212,56 @@ namespace ModelMapperGenerator.Analyzers.UnitTests
                 }
                 """;
             TypesWithSameNameNotAllowedAnalyzer analyzer = new();
-            (CompilationWithAnalyzers compilationWithAnalyzers, Compilation compilation) = ArrangeHelpers.ArrangeTest(source, analyzer);
+            (CompilationWithAnalyzers compilationWithAnalyzers, _) = ArrangeHelpers.ArrangeTest(source, analyzer);
+
+            // Act
+            AnalysisResult result = await compilationWithAnalyzers.GetAnalysisResultAsync(CancellationToken.None);
+
+            // Assert
+            ImmutableArray<Diagnostic> diags = result.GetAllDiagnostics();
+            Assert.Empty(diags);
+        }
+
+        [Fact]
+        public async Task DoesNotReportDiagnostics_ForGenericTypes_WithTheSameName_ButDifferentTypeParams()
+        {
+            // Arrange
+            string source = """
+                using System;
+                using ModelMapperGenerator.Attributes;
+                using FirstSourceNamespace;
+
+                namespace TargetNamespace
+                {
+                    [ModelGenerationTarget(Types = new Type[] {
+                        typeof(Person<Document>),
+                        typeof(Person<Rank>),
+                    })]
+                    public class FirstHook {}
+                }
+                
+                namespace FirstSourceNamespace
+                {
+                    public class Person<T>
+                    {
+                        public Guid Id {get;set;}
+                        public T Grade {get;set;}
+                    }
+
+                    public class Document
+                    {
+                        public Guid DocumentId {get;set}
+                    }
+
+                    public class Rank
+                    {
+                        public int Order {get;set;}
+                    }
+                }
+                """;
+
+            TypesWithSameNameNotAllowedAnalyzer analyzer = new();
+            (CompilationWithAnalyzers compilationWithAnalyzers, _) = ArrangeHelpers.ArrangeTest(source, analyzer);
 
             // Act
             AnalysisResult result = await compilationWithAnalyzers.GetAnalysisResultAsync(CancellationToken.None);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using ModelMapperGenerator.Constants;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -8,17 +9,28 @@ namespace ModelMapperGenerator.Descriptors
 {
     internal sealed class NamedTypeSymbolDescriptor : IEquatable<NamedTypeSymbolDescriptor>
     {
+        private string? _symbolFullyQualifiedName = null;
+
         public INamedTypeSymbol Symbol { get; private set; } = null!;
         public FieldSymbolDescriptor[]? EnumSymbolMembers { get; private set; }
         public PropertySymbolDescriptor[]? ClassSymbolMembers { get; private set; }
         public string SymbolName { get; private set; } = null!;
         public string SymbolNamespaceName { get; private set; } = null!;
+        public bool IsGeneric { get; private set; } = false;
+        public string SymbolFullyQualifiedName 
+        { 
+            get
+            {
+                _symbolFullyQualifiedName ??= SymbolNamespaceName + SourceElementsConstants.Dot + SymbolName;
+                return _symbolFullyQualifiedName;
+            }
+        }
 
         private NamedTypeSymbolDescriptor() { }
 
         public static NamedTypeSymbolDescriptor? Create(INamedTypeSymbol symbol)
         {
-            if (symbol.TypeKind != TypeKind.Class && symbol.TypeKind != TypeKind.Enum)
+            if ((symbol.TypeKind != TypeKind.Class && symbol.TypeKind != TypeKind.Enum) || symbol.IsUnboundGenericType)
             {
                 return null;
             }
@@ -47,7 +59,8 @@ namespace ModelMapperGenerator.Descriptors
                 EnumSymbolMembers = enumDescriptors,
                 Symbol = symbol,
                 SymbolName = symbol.Name,
-                SymbolNamespaceName = symbol.ContainingNamespace.ToDisplayString()
+                SymbolNamespaceName = symbol.ContainingNamespace.ToDisplayString(),
+                IsGeneric = symbol.IsGenericType
             };
 
             return descriptor;

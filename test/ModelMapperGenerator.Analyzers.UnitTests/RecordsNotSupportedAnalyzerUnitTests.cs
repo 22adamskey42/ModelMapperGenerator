@@ -1,9 +1,9 @@
 ﻿using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
-using ModelMapperGenerator.Analyzer.UnitTests.Infrastructure;
+using ModelMapperGenerator.Analyzers.UnitTests.Infrastructure;
 
-namespace ModelMapperGenerator.Analyzer.UnitTests
+namespace ModelMapperGenerator.Analyzers.UnitTests
 {
     public class RecordsNotSupportedAnalyzerUnitTests
     {

@@ -1,10 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis;
 using ModelMapperGenerator.Analyzer.Constants;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ModelMapperGenerator.Analyzers.Infrastructure
